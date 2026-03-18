@@ -1,61 +1,48 @@
 import React, { useState } from "react";
-import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import "./Login.css";
 
 function Login() {
-  const [formData, setFormData] = useState({
-    email: "",
-    password: ""
-  });
+  const navigate = useNavigate(); // ✅ INSIDE component
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    try {
-      const res = await axios.post(
-        "http://localhost:5000/api/auth/login",
-        formData
-      );
-
-      // ✅ store token
-      localStorage.setItem("token", res.data.token);
-
-      alert("Login successful");
-
-    } catch (err) {
-      alert(err.response?.data?.message || "Login failed");
+  const handleLogin = () => {
+    if (email && password) {
+      localStorage.setItem("token", "dummy"); // temp
+      navigate("/dashboard"); // ✅ works
+    } else {
+      alert("Enter details");
     }
   };
 
   return (
-    <div>
-      <h2>Login</h2>
+    <div className="login-wrapper">
+      <div className="login-box">
+        <h2>Welcome Back</h2>
+        <p>Please login to continue</p>
 
-      <form onSubmit={handleSubmit}>
         <input
           type="email"
-          name="email"
           placeholder="Email"
-          onChange={handleChange}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
         />
-        <br />
 
         <input
           type="password"
-          name="password"
           placeholder="Password"
-          onChange={handleChange}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
         />
-        <br />
 
-        <button type="submit">Login</button>
-      </form>
+        <button onClick={handleLogin}>Login</button>
+
+        <p onClick={() => navigate("/register")} style={{cursor:"pointer"}}>
+          Don't have an account? Register
+        </p>
+      </div>
     </div>
   );
 }

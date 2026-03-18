@@ -1,66 +1,38 @@
 import React, { useState } from "react";
-import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import "./Register.css";
 
 function Register() {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: ""
-  });
+  const navigate = useNavigate(); // ✅ INSIDE
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    try {
-      const res = await axios.post(
-        "http://localhost:5000/api/auth/register",
-        formData
-      );
-
-      alert(res.data.message);
-    } catch (err) {
-      alert("Error: " + err.response?.data?.message || err.message);
+  const handleRegister = () => {
+    if (name && email && password) {
+      alert("Registered Successfully");
+      navigate("/"); // back to login
+    } else {
+      alert("Fill all fields");
     }
   };
 
   return (
-    <div>
-      <h2>Register</h2>
+    <div className="register-wrapper">
+      <div className="register-box">
+        <h2>Create Account</h2>
 
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          name="name"
-          placeholder="Name"
-          onChange={handleChange}
-        />
-        <br />
+        <input placeholder="Name" onChange={(e)=>setName(e.target.value)} />
+        <input placeholder="Email" onChange={(e)=>setEmail(e.target.value)} />
+        <input placeholder="Password" onChange={(e)=>setPassword(e.target.value)} />
 
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          onChange={handleChange}
-        />
-        <br />
+        <button onClick={handleRegister}>Register</button>
 
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          onChange={handleChange}
-        />
-        <br />
-
-        <button type="submit">Register</button>
-      </form>
+        <p onClick={() => navigate("/")} style={{cursor:"pointer"}}>
+          Already have account? Login
+        </p>
+      </div>
     </div>
   );
 }

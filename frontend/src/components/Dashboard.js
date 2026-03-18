@@ -1,37 +1,59 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import "./Dashboard.css";
+
 
 function Dashboard() {
-  const [data, setData] = useState("");
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const token = localStorage.getItem("token");
-
-        const res = await axios.get(
-          "http://localhost:5000/api/protected",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        setData(res.data.message);
-
-      } catch (error) {
-        console.log(error);
-      }
-    };
-
-    fetchData();
-  }, []);
+  // ✅ Logout function
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/"); // go back to login
+  };
 
   return (
-    <div>
-      <h2>Dashboard</h2>
-      <p>{data}</p>
+    <div className="dashboard-container">
+
+      {/* Sidebar */}
+      <div className="sidebar">
+        <h2>DTMS</h2>
+        <ul>
+          <li>Dashboard</li>
+          <li>Users</li>
+          <li>Projects</li>
+          <li>Settings</li>
+        </ul>
+      </div>
+
+      {/* Main */}
+      <div className="main">
+
+        {/* Topbar */}
+        <div className="topbar">
+          <h2>Dashboard</h2>
+          <button onClick={handleLogout}>Logout</button>
+        </div>
+
+        {/* Cards */}
+        <div className="cards">
+          <div className="card">
+            <h3>Total Users</h3>
+            <p>120</p>
+          </div>
+
+          <div className="card">
+            <h3>Projects</h3>
+            <p>15</p>
+          </div>
+
+          <div className="card">
+            <h3>Tasks</h3>
+            <p>45</p>
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 }
