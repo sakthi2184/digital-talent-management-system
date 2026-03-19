@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "./Register.css";
+import "./register.css";
 
 function Register() {
   const navigate = useNavigate(); // ✅ INSIDE
@@ -19,8 +19,8 @@ function Register() {
   };
 
   return (
-    <div className="register-wrapper">
-      <div className="register-box">
+    <div className="register-container">
+      <div className="register-card">
         <h2>Create Account</h2>
 
         <input placeholder="Name" onChange={(e)=>setName(e.target.value)} />

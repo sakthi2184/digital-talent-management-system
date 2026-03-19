@@ -1,17 +1,24 @@
 import React from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import "./Dashboard.css";
+import "./dashboard.css";
 
 
 function Dashboard() {
   const navigate = useNavigate();
 
-  // ✅ Logout function
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/"); // go back to login
-  };
+useEffect(() => {
+  const token = localStorage.getItem("token");
 
+  if (!token) {
+    navigate("/");
+  }
+}, []);
+
+const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/");
+  };
   return (
     <div className="dashboard-container">
 

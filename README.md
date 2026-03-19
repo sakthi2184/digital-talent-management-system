@@ -1,1 +1,0 @@
-# digital-talent-management-system

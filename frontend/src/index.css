@@ -1,23 +1,5 @@
-/* Reset */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-/* Body */
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: #f9fafb;
-}
-
-/* Links */
-a {
-  text-decoration: none;
-  color: inherit;
-}
-
-/* Buttons (optional global style) */
-button {
-  font-family: inherit;
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  background: #f4f6f9;
 }
