@@ -1,68 +1,53 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
-import "./login.css";
 
 function Login() {
-  const navigate = useNavigate();
+  const [form, setForm] = useState({
+    email: "",
+    password: ""
+  });
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
-  // ✅ ADD THIS FUNCTION (this is what I meant earlier)
-  const handleLogin = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
     try {
       const res = await axios.post(
         "http://localhost:5000/api/auth/login",
-        {
-          email,
-          password,
-        }
+        form
       );
 
-      // store token
+      // save token
       localStorage.setItem("token", res.data.token);
 
-      alert(res.data.message);
+      alert("Login Successful");
 
-      // redirect to dashboard
-      navigate("/dashboard");
+      // redirect (simple)
+      window.location.href = "/dashboard";
 
     } catch (err) {
-      alert(err.response?.data?.message || "Login failed");
+      alert(err.response?.data?.message || "Error");
     }
   };
 
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <h2>Welcome Back</h2>
-        <p>Please login to continue</p>
-
+    <div>
+      <h2>Login</h2>
+      <form onSubmit={handleSubmit}>
+        <input name="email" placeholder="Email" onChange={handleChange} />
+        <br />
         <input
-          type="email"
-          placeholder="Enter Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-
-        <input
+          name="password"
           type="password"
-          placeholder="Enter Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Password"
+          onChange={handleChange}
         />
-
-        {/* ✅ connect button to function */}
-        <button onClick={handleLogin}>Login</button>
-
-        <p
-          onClick={() => navigate("/register")}
-          style={{ cursor: "pointer", marginTop: "10px" }}
-        >
-          Don't have an account? Register
-        </p>
-      </div>
+        <br />
+        <button type="submit">Login</button>
+      </form>
     </div>
   );
 }

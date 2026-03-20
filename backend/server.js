@@ -1,16 +1,24 @@
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
+import express from "express";
+import mongoose from "mongoose";
+import cors from "cors";
+import dotenv from "dotenv";
+import authRoutes from "./routes/auth.js";
+
+dotenv.config();
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-mongoose.connect("mongodb+srv://admin:admin123@cluster0.e0fgzng.mongodb.net/?appName=Cluster0")
-  .then(() => console.log("MongoDB Connected"))
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log("✅ MongoDB Connected");
+
+    app.use("/api/auth", authRoutes);
+
+    app.listen(5000, () =>
+      console.log("🚀 Server running on port 5000")
+    );
+  })
   .catch(err => console.log(err));
-
-app.use("/api/auth", require("./routes/auth"));
-
-app.listen(5000, () => console.log("Server running on port 5000"));

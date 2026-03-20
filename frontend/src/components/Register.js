@@ -1,38 +1,49 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import "./register.css";
+import { useState } from "react";
+import axios from "axios";
 
 function Register() {
-  const navigate = useNavigate(); // ✅ INSIDE
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: ""
+  });
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
-  const handleRegister = () => {
-    if (name && email && password) {
-      alert("Registered Successfully");
-      navigate("/"); // back to login
-    } else {
-      alert("Fill all fields");
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      const res = await axios.post(
+        "http://localhost:5000/api/auth/register",
+        form
+      );
+
+      alert(res.data.message);
+    } catch (err) {
+      alert(err.response?.data?.message || "Error");
     }
   };
 
   return (
-    <div className="register-container">
-      <div className="register-card">
-        <h2>Create Account</h2>
-
-        <input placeholder="Name" onChange={(e)=>setName(e.target.value)} />
-        <input placeholder="Email" onChange={(e)=>setEmail(e.target.value)} />
-        <input placeholder="Password" onChange={(e)=>setPassword(e.target.value)} />
-
-        <button onClick={handleRegister}>Register</button>
-
-        <p onClick={() => navigate("/")} style={{cursor:"pointer"}}>
-          Already have account? Login
-        </p>
-      </div>
+    <div>
+      <h2>Register</h2>
+      <form onSubmit={handleSubmit}>
+        <input name="name" placeholder="Name" onChange={handleChange} />
+        <br />
+        <input name="email" placeholder="Email" onChange={handleChange} />
+        <br />
+        <input
+          name="password"
+          type="password"
+          placeholder="Password"
+          onChange={handleChange}
+        />
+        <br />
+        <button type="submit">Register</button>
+      </form>
     </div>
   );
 }
