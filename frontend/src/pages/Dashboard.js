@@ -1,16 +1,20 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
+import { useTheme } from "../ThemeContext";
 
 export default function Dashboard() {
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const token = localStorage.getItem("token");
+  const auth = { headers: { Authorization: `Bearer ${token}` } };
 
   useEffect(() => {
     if (!user) { navigate("/login"); return; }
-    axios.get("http://localhost:5000/api/tasks/all")
+    axios.get("http://localhost:5000/api/tasks/all", auth)
       .then(res => { setTasks(res.data); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
@@ -47,24 +51,38 @@ export default function Dashboard() {
       <div className="sidebar">
         <div className="sidebar-logo">Talent<span>MS</span></div>
 
-        <nav>
+        <nav style={{ flex: 1 }}>
           <Link to="/dashboard" className="nav-item active">
             <span>📊</span> Dashboard
           </Link>
           <Link to="/tasks" className="nav-item">
             <span>✅</span> Tasks
           </Link>
+          <Link to="/profile" className="nav-item">
+            <span>👤</span> Profile
+          </Link>
+          {user?.role === "admin" && (
+            <Link to="/admin" className="nav-item">
+              <span>🛡️</span> Admin
+            </Link>
+          )}
         </nav>
 
-        <div className="user-info">
-          <div className="user-avatar">
-            {user?.name?.charAt(0).toUpperCase()}
+        <div style={{ marginTop: "auto" }}>
+          <button className="theme-toggle-btn" onClick={toggleTheme}>
+            <span>{theme === "dark" ? "☀️" : "🌙"}</span>
+            {theme === "dark" ? "Light Mode" : "Dark Mode"}
+          </button>
+          <div className="user-info">
+            <div className="user-avatar">
+              {user?.name?.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <div className="user-name">{user?.name}</div>
+              <div className="user-role">{user?.role}</div>
+            </div>
+            <button className="logout-btn" onClick={logout} title="Logout">⏻</button>
           </div>
-          <div>
-            <div className="user-name">{user?.name}</div>
-            <div className="user-role">{user?.role}</div>
-          </div>
-          <button className="logout-btn" onClick={logout} title="Logout">⏻</button>
         </div>
       </div>
 
