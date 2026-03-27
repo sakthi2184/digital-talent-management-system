@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
-import { useTheme } from "../ThemeContext";
+import Sidebar from "../components/Sidebar";
 
 export default function Dashboard() {
-  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
   const [tasks, setTasks] = useState([]);
@@ -25,10 +24,6 @@ export default function Dashboard() {
   const inProgress = tasks.filter(t => t.status === "In Progress").length;
   const highPriority = tasks.filter(t => t.priority === "High").length;
 
-  const logout = () => {
-    localStorage.clear();
-    navigate("/login");
-  };
 
   const recentTasks = tasks.slice(-5).reverse();
 
@@ -48,43 +43,7 @@ export default function Dashboard() {
     <div style={{ display: "flex" }}>
 
       {/* Sidebar */}
-      <div className="sidebar">
-        <div className="sidebar-logo">Talent<span>MS</span></div>
-
-        <nav style={{ flex: 1 }}>
-          <Link to="/dashboard" className="nav-item active">
-            <span>📊</span> Dashboard
-          </Link>
-          <Link to="/tasks" className="nav-item">
-            <span>✅</span> Tasks
-          </Link>
-          <Link to="/profile" className="nav-item">
-            <span>👤</span> Profile
-          </Link>
-          {user?.role === "admin" && (
-            <Link to="/admin" className="nav-item">
-              <span>🛡️</span> Admin
-            </Link>
-          )}
-        </nav>
-
-        <div style={{ marginTop: "auto" }}>
-          <button className="theme-toggle-btn" onClick={toggleTheme}>
-            <span>{theme === "dark" ? "☀️" : "🌙"}</span>
-            {theme === "dark" ? "Light Mode" : "Dark Mode"}
-          </button>
-          <div className="user-info">
-            <div className="user-avatar">
-              {user?.name?.charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <div className="user-name">{user?.name}</div>
-              <div className="user-role">{user?.role}</div>
-            </div>
-            <button className="logout-btn" onClick={logout} title="Logout">⏻</button>
-          </div>
-        </div>
-      </div>
+      <Sidebar />
 
       {/* Main Content */}
       <div className="main-content">
@@ -144,7 +103,7 @@ export default function Dashboard() {
 
             {/* Recent Tasks */}
             <div style={{ marginBottom: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ fontSize: "16px", fontWeight: 600, color: "#fff" }}>Recent Tasks</div>
+              <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--text-primary)" }}>Recent Tasks</div>
               <Link to="/tasks" style={{ fontSize: "13px", color: "#667eea", textDecoration: "none" }}>
                 View all →
               </Link>
@@ -166,14 +125,14 @@ export default function Dashboard() {
               recentTasks.map(task => (
                 <div key={task._id} className="task-card">
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
-                    <div style={{ fontSize: "15px", fontWeight: 600, color: "#fff" }}>{task.title}</div>
+                   <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--text-primary)" }}>{task.title}</div>
                     <div style={{ display: "flex", gap: "6px" }}>
                       <span className={getPriorityBadge(task.priority)}>{task.priority}</span>
                       <span className={getStatusBadge(task.status)}>{task.status}</span>
                     </div>
                   </div>
-                  <div style={{ fontSize: "13px", color: "#64748b", marginBottom: "8px" }}>{task.description}</div>
-                  <div style={{ fontSize: "12px", color: "#475569" }}>
+                  <div style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "8px" }}>{task.description}</div>
+                  <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
                     {task.assignedTo ? `👤 ${task.assignedTo.name}` : "Unassigned"}
                     {task.deadline && ` · 📅 ${new Date(task.deadline).toLocaleDateString()}`}
                   </div>

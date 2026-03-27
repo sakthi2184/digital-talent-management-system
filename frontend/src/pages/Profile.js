@@ -2,10 +2,9 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
-import { useTheme } from "../ThemeContext";
+import Sidebar from "../components/Sidebar";
 
 export default function Profile() {
-    const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
   const token = localStorage.getItem("token");
@@ -57,39 +56,7 @@ export default function Profile() {
     <div style={{ display: "flex" }}>
 
       {/* Sidebar */}
-      <div className="sidebar">
-        <div className="sidebar-logo">Talent<span>MS</span></div>
-        <nav style={{ flex: 1 }}>
-          <Link to="/dashboard" className="nav-item">
-            <span>📊</span> Dashboard
-          </Link>
-          <Link to="/tasks" className="nav-item">
-            <span>✅</span> Tasks
-          </Link>
-          <Link to="/profile" className="nav-item active">
-            <span>👤</span> Profile
-          </Link>
-          {isAdmin && (
-            <Link to="/admin" className="nav-item">
-              <span>🛡️</span> Admin
-            </Link>
-          )}
-        </nav>
-        <div style={{ marginTop: "auto" }}>
-          <button className="theme-toggle-btn" onClick={toggleTheme}>
-            <span>{theme === "dark" ? "☀️" : "🌙"}</span>
-            {theme === "dark" ? "Light Mode" : "Dark Mode"}
-          </button>
-          <div className="user-info">
-            <div className="user-avatar">{user?.name?.charAt(0).toUpperCase()}</div>
-            <div>
-              <div className="user-name">{user?.name}</div>
-              <div className="user-role">{user?.role}</div>
-            </div>
-            <button className="logout-btn" onClick={logout} title="Logout">⏻</button>
-          </div>
-        </div>
-      </div>
+      <Sidebar />
 
       {/* Main Content */}
       <div className="main-content">
