@@ -332,3 +332,10 @@ body {
   .main-content { margin-left: 0; padding: 20px; }
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+:root {
+  --chart-text: #64748b;
+}
+[data-theme="dark"] {
+  --chart-text: #94a3b8;
+}
