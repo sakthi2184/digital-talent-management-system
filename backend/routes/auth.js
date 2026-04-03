@@ -121,4 +121,31 @@ router.put("/admin/users/:id/role", protect, adminOnly, async (req, res) => {
   }
 });
 
+// GET USER PERFORMANCE — tasks per user
+router.get("/admin/performance", protect, adminOnly, async (req, res) => {
+  try {
+    const Task = (await import("../models/Task.js")).default;
+    const users = await User.find().select("name email role");
+    const tasks = await Task.find().populate("assignedTo", "name");
+
+    const performance = users.map(u => {
+      const userTasks = tasks.filter(t => t.assignedTo?._id.toString() === u._id.toString());
+      return {
+        id: u._id,
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        total: userTasks.length,
+        completed: userTasks.filter(t => t.status === "Completed").length,
+        inProgress: userTasks.filter(t => t.status === "In Progress").length,
+        pending: userTasks.filter(t => t.status === "Pending").length,
+      };
+    });
+
+    res.json(performance);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching performance" });
+  }
+});
+
 export default router;

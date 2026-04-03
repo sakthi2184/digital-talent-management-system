@@ -15,11 +15,17 @@ export default function TaskManager() {
   const [myTasks, setMyTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editId, setEditId] = useState(null);
-  const [filter, setFilter] = useState("All");
   const [activeTab, setActiveTab] = useState("all");
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState("newest");
+  const [filterPriority, setFilterPriority] = useState("All");
+  const [filterStatus, setFilterStatus] = useState("All");
+  const [expandedLog, setExpandedLog] = useState(null);
+
   const [form, setForm] = useState({
     title: "", description: "", assignedTo: "",
-    priority: "Medium", status: "Pending", deadline: ""
+    priority: "Medium", status: "Pending",
+    deadline: "", progressPercent: 0
   });
   const [submitForm, setSubmitForm] = useState({
     title: "", description: "", priority: "Medium", deadline: ""
@@ -37,9 +43,16 @@ export default function TaskManager() {
     }
   }, []);
 
+  useEffect(() => { loadTasks(); }, [search, sort, filterPriority, filterStatus]);
+
   const loadTasks = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/tasks/all", auth);
+      const params = new URLSearchParams();
+      if (search) params.append("search", search);
+      if (sort) params.append("sort", sort);
+      if (filterPriority !== "All") params.append("priority", filterPriority);
+      if (filterStatus !== "All") params.append("status", filterStatus);
+      const res = await axios.get(`http://localhost:5000/api/tasks/all?${params}`, auth);
       setTasks(res.data);
     } catch {
       toast.error("Failed to load tasks");
@@ -52,13 +65,11 @@ export default function TaskManager() {
     try {
       const res = await axios.get("http://localhost:5000/api/tasks/my", auth);
       setMyTasks(res.data);
-    } catch {
-      toast.error("Failed to load my tasks");
-    }
+    } catch {}
   };
 
   const resetForm = () => {
-    setForm({ title: "", description: "", assignedTo: "", priority: "Medium", status: "Pending", deadline: "" });
+    setForm({ title: "", description: "", assignedTo: "", priority: "Medium", status: "Pending", deadline: "", progressPercent: 0 });
     setEditId(null);
   };
 
@@ -75,6 +86,7 @@ export default function TaskManager() {
       }
       resetForm();
       loadTasks();
+      setActiveTab("all");
     } catch (err) {
       toast.error(err.response?.data?.message || "Something went wrong");
     }
@@ -88,6 +100,7 @@ export default function TaskManager() {
       toast.success("Task submitted for approval!");
       setSubmitForm({ title: "", description: "", priority: "Medium", deadline: "" });
       loadMyTasks();
+      setActiveTab("my");
     } catch (err) {
       toast.error(err.response?.data?.message || "Submission failed");
     }
@@ -105,9 +118,8 @@ export default function TaskManager() {
   };
 
   const toggleStatus = async (task) => {
-    const next = task.status === "Pending"
-      ? "In Progress" : task.status === "In Progress"
-      ? "Completed" : "Pending";
+    const next = task.status === "Pending" ? "In Progress"
+      : task.status === "In Progress" ? "Completed" : "Pending";
     try {
       await axios.put(`http://localhost:5000/api/tasks/update/${task._id}`, { status: next }, auth);
       toast.success(`Status → ${next}`);
@@ -118,15 +130,23 @@ export default function TaskManager() {
   };
 
   const updateMyTaskStatus = async (task) => {
-    const next = task.status === "Pending"
-      ? "In Progress" : task.status === "In Progress"
-      ? "Completed" : "Pending";
+    const next = task.status === "Pending" ? "In Progress"
+      : task.status === "In Progress" ? "Completed" : "Pending";
     try {
       await axios.put(`http://localhost:5000/api/tasks/update-status/${task._id}`, { status: next }, auth);
       toast.success(`Status → ${next}`);
       loadMyTasks();
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to update status");
+      toast.error(err.response?.data?.message || "Failed");
+    }
+  };
+
+  const updateProgress = async (task, value) => {
+    try {
+      await axios.put(`http://localhost:5000/api/tasks/update/${task._id}`, { progressPercent: Number(value) }, auth);
+      loadTasks();
+    } catch {
+      toast.error("Failed to update progress");
     }
   };
 
@@ -135,21 +155,38 @@ export default function TaskManager() {
       title: task.title, description: task.description,
       assignedTo: task.assignedTo?._id || "",
       priority: task.priority, status: task.status,
-      deadline: task.deadline ? task.deadline.slice(0, 10) : ""
+      deadline: task.deadline ? task.deadline.slice(0, 10) : "",
+      progressPercent: task.progressPercent || 0
     });
     setEditId(task._id);
+    setActiveTab("submit");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const getStatusBadge = (status) => {
-    if (status === "Completed") return "badge-status badge-completed";
-    if (status === "In Progress") return "badge-status badge-progress";
+  const getDaysLeft = (deadline) => {
+    if (!deadline) return null;
+    const diff = Math.ceil((new Date(deadline) - new Date()) / (1000 * 60 * 60 * 24));
+    return diff;
+  };
+
+  const getDeadlineBadge = (deadline, status) => {
+    if (!deadline || status === "Completed") return null;
+    const days = getDaysLeft(deadline);
+    if (days < 0) return { label: `${Math.abs(days)}d overdue`, color: "#dc2626", bg: "rgba(239,68,68,0.12)" };
+    if (days === 0) return { label: "Due today!", color: "#d97706", bg: "rgba(251,191,36,0.12)" };
+    if (days <= 3) return { label: `${days}d left`, color: "#d97706", bg: "rgba(251,191,36,0.12)" };
+    return { label: `${days}d left`, color: "#16a34a", bg: "rgba(34,197,94,0.12)" };
+  };
+
+  const getStatusBadge = (s) => {
+    if (s === "Completed") return "badge-status badge-completed";
+    if (s === "In Progress") return "badge-status badge-progress";
     return "badge-status badge-pending";
   };
 
-  const getPriorityBadge = (priority) => {
-    if (priority === "High") return "badge-status badge-high";
-    if (priority === "Low") return "badge-status badge-low";
+  const getPriorityBadge = (p) => {
+    if (p === "High") return "badge-status badge-high";
+    if (p === "Low") return "badge-status badge-low";
     return "badge-status badge-medium";
   };
 
@@ -159,7 +196,105 @@ export default function TaskManager() {
     return { bg: "rgba(251,191,36,0.12)", color: "#d97706", label: "⏳ Pending Approval" };
   };
 
-  const filteredTasks = filter === "All" ? tasks : tasks.filter(t => t.status === filter);
+  const TaskCard = ({ task, showControls = true, onStatusUpdate }) => {
+    const approval = getApprovalBadge(task.approvalStatus);
+    const deadlineBadge = getDeadlineBadge(task.deadline, task.status);
+    const progress = task.progressPercent || 0;
+
+    return (
+      <div className="task-card">
+        {/* Title + Badges */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+          <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--text-primary)" }}>{task.title}</div>
+          <div style={{ display: "flex", gap: "6px", flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <span className={getPriorityBadge(task.priority)}>{task.priority}</span>
+            <span className={getStatusBadge(task.status)}>{task.status}</span>
+            {deadlineBadge && (
+              <span style={{ padding: "4px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: 600, background: deadlineBadge.bg, color: deadlineBadge.color }}>
+                📅 {deadlineBadge.label}
+              </span>
+            )}
+            <span style={{ padding: "4px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: 600, background: approval.bg, color: approval.color }}>
+              {approval.label}
+            </span>
+          </div>
+        </div>
+
+        {/* Description */}
+        {task.description && (
+          <div style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "10px" }}>
+            {task.description}
+          </div>
+        )}
+
+        {/* Meta */}
+        <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "12px", display: "flex", gap: "14px", flexWrap: "wrap" }}>
+          {task.assignedTo && <span>👤 {task.assignedTo.name}</span>}
+          {task.submittedBy && <span>📝 {task.submittedBy.name}</span>}
+          {task.deadline && <span>🗓 {new Date(task.deadline).toLocaleDateString()}</span>}
+        </div>
+
+        {/* Progress Bar */}
+        <div style={{ marginBottom: "14px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
+            <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>Progress</span>
+            <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--accent)" }}>{progress}%</span>
+          </div>
+          <div style={{ background: "var(--bg-tertiary)", borderRadius: "999px", height: "8px", overflow: "hidden" }}>
+            <div style={{
+              width: `${progress}%`, height: "100%", borderRadius: "999px",
+              background: progress === 100 ? "#22c55e" : progress >= 50 ? "var(--accent)" : "#fbbf24",
+              transition: "width 0.5s ease"
+            }} />
+          </div>
+          {isAdmin && showControls && (
+            <input type="range" min="0" max="100" step="5" value={progress}
+              onChange={e => updateProgress(task, e.target.value)}
+              style={{ width: "100%", marginTop: "6px", accentColor: "var(--accent)", cursor: "pointer" }}
+            />
+          )}
+        </div>
+
+        {/* Action Buttons */}
+        {showControls && (
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            {isAdmin && (
+              <>
+                <button className="btn-sm-custom btn-toggle" onClick={() => toggleStatus(task)}>⟳ Status</button>
+                <button className="btn-sm-custom btn-edit" onClick={() => startEdit(task)}>✏️ Edit</button>
+                <button className="btn-sm-custom btn-delete" onClick={() => deleteTask(task._id)}>🗑 Delete</button>
+              </>
+            )}
+            {onStatusUpdate && (
+              <button className="btn-sm-custom btn-toggle" onClick={() => onStatusUpdate(task)}>⟳ Update Status</button>
+            )}
+          </div>
+        )}
+
+        {/* Activity Log */}
+        {task.activityLog?.length > 0 && (
+          <div style={{ marginTop: "12px" }}>
+            <button onClick={() => setExpandedLog(expandedLog === task._id ? null : task._id)}
+              style={{ background: "none", border: "none", color: "var(--accent)", fontSize: "12px", cursor: "pointer", padding: 0, fontWeight: 500 }}>
+              {expandedLog === task._id ? "▲ Hide" : "▼ Show"} Activity Log ({task.activityLog.length})
+            </button>
+            {expandedLog === task._id && (
+              <div style={{ marginTop: "8px", borderLeft: "2px solid var(--accent)", paddingLeft: "12px" }}>
+                {[...task.activityLog].reverse().map((log, i) => (
+                  <div key={i} style={{ marginBottom: "6px" }}>
+                    <div style={{ fontSize: "12px", color: "var(--text-primary)", fontWeight: 500 }}>{log.action}</div>
+                    <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
+                      by {log.by} · {new Date(log.at).toLocaleString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div style={{ display: "flex" }}>
@@ -168,11 +303,11 @@ export default function TaskManager() {
         <div className="page-title">Task Manager</div>
 
         {/* Tab Switcher */}
-        <div style={{ display: "flex", gap: "8px", marginBottom: "24px" }}>
+        <div style={{ display: "flex", gap: "8px", marginBottom: "24px", flexWrap: "wrap" }}>
           {[
             { key: "all", label: "📋 All Tasks" },
             { key: "my", label: "👤 My Tasks" },
-            ...(isAdmin ? [{ key: "submit", label: "➕ New Task" }] : [{ key: "submit", label: "📝 Submit Task" }])
+            { key: "submit", label: isAdmin ? "➕ New Task" : "📝 Submit Task" }
           ].map(tab => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{
               padding: "8px 18px", borderRadius: "10px", border: "1px solid",
@@ -187,69 +322,51 @@ export default function TaskManager() {
         {/* ALL TASKS TAB */}
         {activeTab === "all" && (
           <>
-            <div style={{ display: "flex", gap: "8px", marginBottom: "20px", flexWrap: "wrap" }}>
-              {["All", "Pending", "In Progress", "Completed"].map(f => (
-                <button key={f} onClick={() => setFilter(f)} style={{
-                  padding: "7px 16px", borderRadius: "20px", border: "1px solid",
-                  fontSize: "13px", fontWeight: 500, cursor: "pointer", transition: "all 0.2s",
-                  background: filter === f ? "var(--accent-bg)" : "transparent",
-                  borderColor: filter === f ? "var(--accent)" : "var(--border)",
-                  color: filter === f ? "var(--accent)" : "var(--text-secondary)"
-                }}>{f}</button>
-              ))}
-              <span style={{ marginLeft: "auto", fontSize: "13px", color: "var(--text-secondary)", alignSelf: "center" }}>
-                {filteredTasks.length} task{filteredTasks.length !== 1 ? "s" : ""}
-              </span>
+            {/* Search + Sort + Filter Bar */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto auto", gap: "10px", marginBottom: "20px" }}>
+              <input
+                className="input-custom"
+                placeholder="🔍 Search tasks..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                style={{ marginBottom: 0 }}
+              />
+              <select className="select-custom" value={sort} onChange={e => setSort(e.target.value)} style={{ marginBottom: 0, width: "auto" }}>
+                <option value="newest">⬇ Newest</option>
+                <option value="oldest">⬆ Oldest</option>
+                <option value="deadline">📅 Deadline</option>
+                <option value="priority">🔥 Priority</option>
+                <option value="progress">📊 Progress</option>
+              </select>
+              <select className="select-custom" value={filterPriority} onChange={e => setFilterPriority(e.target.value)} style={{ marginBottom: 0, width: "auto" }}>
+                <option value="All">All Priority</option>
+                <option value="High">🔴 High</option>
+                <option value="Medium">🟡 Medium</option>
+                <option value="Low">🟢 Low</option>
+              </select>
+              <select className="select-custom" value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ marginBottom: 0, width: "auto" }}>
+                <option value="All">All Status</option>
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+              </select>
+            </div>
+
+            <div style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "16px" }}>
+              {tasks.length} task{tasks.length !== 1 ? "s" : ""} found
+              {search && ` for "${search}"`}
             </div>
 
             {loading ? (
               <div style={{ color: "var(--text-secondary)", fontSize: "14px" }}>Loading tasks...</div>
-            ) : filteredTasks.length === 0 ? (
+            ) : tasks.length === 0 ? (
               <div style={{
                 background: "var(--bg-card)", border: "1px solid var(--border)",
                 borderRadius: "14px", padding: "40px", textAlign: "center",
                 color: "var(--text-secondary)", fontSize: "14px"
               }}>No tasks found.</div>
             ) : (
-              filteredTasks.map(task => {
-                const approval = getApprovalBadge(task.approvalStatus);
-                return (
-                  <div key={task._id} className="task-card">
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
-                      <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--text-primary)" }}>{task.title}</div>
-                      <div style={{ display: "flex", gap: "6px", flexShrink: 0, flexWrap: "wrap" }}>
-                        <span className={getPriorityBadge(task.priority)}>{task.priority}</span>
-                        <span className={getStatusBadge(task.status)}>{task.status}</span>
-                        <span style={{ padding: "4px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: 600, background: approval.bg, color: approval.color }}>
-                          {approval.label}
-                        </span>
-                      </div>
-                    </div>
-                    {task.description && (
-                      <div style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "10px" }}>
-                        {task.description}
-                      </div>
-                    )}
-                    <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "14px", display: "flex", gap: "14px", flexWrap: "wrap" }}>
-                      {task.assignedTo && <span>👤 {task.assignedTo.name}</span>}
-                      {task.submittedBy && <span>📝 Submitted by {task.submittedBy.name}</span>}
-                      {task.deadline && <span>📅 {new Date(task.deadline).toLocaleDateString()}</span>}
-                    </div>
-                    {isAdmin && (
-                      <div style={{ display: "flex", gap: "8px" }}>
-                        <button className="btn-sm-custom btn-toggle" onClick={() => toggleStatus(task)}>⟳ Status</button>
-                        <button className="btn-sm-custom btn-edit" onClick={() => { startEdit(task); setActiveTab("submit"); }}>✏️ Edit</button>
-                        <button className="btn-sm-custom btn-delete" onClick={() => deleteTask(task._id)}>🗑 Delete</button>
-                      </div>
-                    )}
-                    {!isAdmin && (
-                      <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-                        👁 View only — use My Tasks to update your assigned tasks
-                      </div>
-                    )}
-                  </div>
-                );
-              })
+              tasks.map(task => <TaskCard key={task._id} task={task} />)
             )}
           </>
         )}
@@ -258,7 +375,7 @@ export default function TaskManager() {
         {activeTab === "my" && (
           <>
             <div style={{ fontSize: "14px", color: "var(--text-secondary)", marginBottom: "20px" }}>
-              Tasks assigned to you — you can update the status of your own tasks.
+              Tasks assigned to you — update status and track your progress.
             </div>
             {myTasks.length === 0 ? (
               <div style={{
@@ -267,34 +384,9 @@ export default function TaskManager() {
                 color: "var(--text-secondary)", fontSize: "14px"
               }}>No tasks assigned to you yet.</div>
             ) : (
-              myTasks.map(task => {
-                const approval = getApprovalBadge(task.approvalStatus);
-                return (
-                  <div key={task._id} className="task-card">
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
-                      <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--text-primary)" }}>{task.title}</div>
-                      <div style={{ display: "flex", gap: "6px", flexShrink: 0, flexWrap: "wrap" }}>
-                        <span className={getPriorityBadge(task.priority)}>{task.priority}</span>
-                        <span className={getStatusBadge(task.status)}>{task.status}</span>
-                        <span style={{ padding: "4px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: 600, background: approval.bg, color: approval.color }}>
-                          {approval.label}
-                        </span>
-                      </div>
-                    </div>
-                    {task.description && (
-                      <div style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "10px" }}>
-                        {task.description}
-                      </div>
-                    )}
-                    <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "14px", display: "flex", gap: "14px" }}>
-                      {task.deadline && <span>📅 {new Date(task.deadline).toLocaleDateString()}</span>}
-                    </div>
-                    <button className="btn-sm-custom btn-toggle" onClick={() => updateMyTaskStatus(task)}>
-                      ⟳ Update Status
-                    </button>
-                  </div>
-                );
-              })
+              myTasks.map(task => (
+                <TaskCard key={task._id} task={task} showControls={true} onStatusUpdate={updateMyTaskStatus} />
+              ))
             )}
           </>
         )}
@@ -333,7 +425,20 @@ export default function TaskManager() {
                     <input type="date" className="input-custom" value={form.deadline}
                       onChange={e => setForm({ ...form, deadline: e.target.value })} />
                   </div>
-                  <div style={{ display: "flex", gap: "10px", marginTop: "4px" }}>
+
+                  {/* Progress Slider */}
+                  <div style={{ marginBottom: "16px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                      <label style={{ fontSize: "13px", color: "var(--text-secondary)" }}>Progress</label>
+                      <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--accent)" }}>{form.progressPercent}%</span>
+                    </div>
+                    <input type="range" min="0" max="100" step="5" value={form.progressPercent}
+                      onChange={e => setForm({ ...form, progressPercent: Number(e.target.value) })}
+                      style={{ width: "100%", accentColor: "var(--accent)", cursor: "pointer" }}
+                    />
+                  </div>
+
+                  <div style={{ display: "flex", gap: "10px" }}>
                     <button type="submit" className="btn-primary-custom" style={{ width: "auto", padding: "10px 28px" }}>
                       {editId ? "Update Task" : "Add Task"}
                     </button>

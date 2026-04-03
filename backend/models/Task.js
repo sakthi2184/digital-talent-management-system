@@ -1,5 +1,11 @@
 import mongoose from "mongoose";
 
+const activitySchema = new mongoose.Schema({
+  action: { type: String },
+  by: { type: String },
+  at: { type: Date, default: Date.now }
+});
+
 const taskSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: { type: String, default: "" },
@@ -20,6 +26,13 @@ const taskSchema = new mongoose.Schema({
     enum: ["Approved", "Pending Approval", "Rejected"],
     default: "Approved"
   },
+  progressPercent: {
+    type: Number,
+    min: 0,
+    max: 100,
+    default: 0
+  },
+  activityLog: [activitySchema],
   deadline: { type: Date }
 }, { timestamps: true });
 
