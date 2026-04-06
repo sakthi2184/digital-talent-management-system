@@ -2,6 +2,8 @@ import express from "express";
 import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
+import nodemailer from "nodemailer";
 
 const router = express.Router();
 
@@ -145,6 +147,93 @@ router.get("/admin/performance", protect, adminOnly, async (req, res) => {
     res.json(performance);
   } catch (err) {
     res.status(500).json({ message: "Error fetching performance" });
+  }
+});
+
+// FORGOT PASSWORD — send reset email
+router.post("/forgot-password", async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) return res.status(404).json({ message: "No account with that email found" });
+
+    const token = crypto.randomBytes(32).toString("hex");
+    user.resetPasswordToken = token;
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+    await user.save();
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
+
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${token}`;
+
+    await transporter.sendMail({
+      from: `"TalentMS" <${process.env.EMAIL_USER}>`,
+      to: user.email,
+      subject: "Password Reset Request — TalentMS",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
+          <h2 style="color: #5C6FD0;">Reset Your Password</h2>
+          <p>Hi ${user.name},</p>
+          <p>You requested a password reset for your TalentMS account.</p>
+          <p>Click the button below to reset your password. This link expires in <strong>1 hour</strong>.</p>
+          <a href="${resetUrl}" style="display:inline-block; margin: 20px 0; padding: 12px 28px; background: #5C6FD0; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">
+            Reset Password
+          </a>
+          <p style="color: #888; font-size: 13px;">If you didn't request this, you can safely ignore this email.</p>
+          <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+          <p style="color: #aaa; font-size: 12px;">TalentMS — Digital Talent Management System</p>
+        </div>
+      `
+    });
+
+    res.json({ message: "Password reset email sent successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error sending reset email" });
+  }
+});
+
+// VERIFY RESET TOKEN
+router.get("/reset-password/:token", async (req, res) => {
+  try {
+    const user = await User.findOne({
+      resetPasswordToken: req.params.token,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+    if (!user) return res.status(400).json({ message: "Reset link is invalid or has expired" });
+    res.json({ message: "Token valid", email: user.email });
+  } catch {
+    res.status(500).json({ message: "Error verifying token" });
+  }
+});
+
+// RESET PASSWORD
+router.post("/reset-password/:token", async (req, res) => {
+  try {
+    const user = await User.findOne({
+      resetPasswordToken: req.params.token,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+    if (!user) return res.status(400).json({ message: "Reset link is invalid or has expired" });
+
+    const { password } = req.body;
+    if (!password || password.length < 6)
+      return res.status(400).json({ message: "Password must be at least 6 characters" });
+
+    user.password = await bcrypt.hash(password, 10);
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    res.json({ message: "Password reset successfully" });
+  } catch {
+    res.status(500).json({ message: "Error resetting password" });
   }
 });
 
