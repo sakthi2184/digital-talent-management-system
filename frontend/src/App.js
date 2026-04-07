@@ -5,7 +5,10 @@ import Dashboard from "./pages/Dashboard";
 import TaskManager from "./pages/TaskManager";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import { ToastContainer } from "react-toastify";
+import NotFound from "./pages/NotFound";
 
 const Protected = ({ children }) => {
   return localStorage.getItem("token") ? children : <Navigate to="/login" />;
@@ -30,18 +33,13 @@ function App() {
       <Routes>
         <Route path="/" element={<Register />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/dashboard" element={
-          <Protected><Dashboard /></Protected>
-        } />
-        <Route path="/tasks" element={
-          <Protected><TaskManager /></Protected>
-        } />
-        <Route path="/profile" element={
-          <Protected><Profile /></Protected>
-        } />
-        <Route path="/admin" element={
-          <AdminRoute><Admin /></AdminRoute>
-        } />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
+        <Route path="/tasks" element={<Protected><TaskManager /></Protected>} />
+        <Route path="/profile" element={<Protected><Profile /></Protected>} />
+        <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   );

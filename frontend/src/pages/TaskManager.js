@@ -10,6 +10,8 @@ export default function TaskManager() {
   const token = localStorage.getItem("token");
   const isAdmin = user?.role === "admin";
   const auth = { headers: { Authorization: `Bearer ${token}` } };
+  const [page, setPage] = useState(1);
+  const tasksPerPage = 10;
 
   const [tasks, setTasks] = useState([]);
   const [myTasks, setMyTasks] = useState([]);
@@ -43,7 +45,7 @@ export default function TaskManager() {
     }
   }, []);
 
-  useEffect(() => { loadTasks(); }, [search, sort, filterPriority, filterStatus]);
+  useEffect(() => { setPage(1); loadTasks(); }, [search, sort, filterPriority, filterStatus]);
 
   const loadTasks = async () => {
     try {
@@ -358,7 +360,22 @@ export default function TaskManager() {
             </div>
 
             {loading ? (
-              <div style={{ color: "var(--text-secondary)", fontSize: "14px" }}>Loading tasks...</div>
+              <div>
+                {[1,2,3].map(i => (
+                  <div key={i} className="skeleton-card">
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px" }}>
+                      <div className="skeleton" style={{ width: "40%", height: "18px" }} />
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        <div className="skeleton" style={{ width: "60px", height: "18px" }} />
+                        <div className="skeleton" style={{ width: "70px", height: "18px" }} />
+                      </div>
+                    </div>
+                    <div className="skeleton" style={{ width: "70%", height: "14px", marginBottom: "10px" }} />
+                    <div className="skeleton" style={{ width: "30%", height: "12px", marginBottom: "14px" }} />
+                    <div className="skeleton" style={{ width: "100%", height: "8px" }} />
+                  </div>
+                ))}
+              </div>
             ) : tasks.length === 0 ? (
               <div style={{
                 background: "var(--bg-card)", border: "1px solid var(--border)",
@@ -366,7 +383,22 @@ export default function TaskManager() {
                 color: "var(--text-secondary)", fontSize: "14px"
               }}>No tasks found.</div>
             ) : (
-              tasks.map(task => <TaskCard key={task._id} task={task} />)
+              <>
+                {tasks.slice((page-1)*tasksPerPage, page*tasksPerPage).map(task => (
+                  <TaskCard key={task._id} task={task} />
+                ))}
+                {tasks.length > tasksPerPage && (
+                  <div style={{ display: "flex", gap: "6px", justifyContent: "center", marginTop: "20px", flexWrap: "wrap" }}>
+                    <button className="pagination-btn" onClick={() => setPage(p => Math.max(1, p-1))} disabled={page === 1}>← Prev</button>
+                    {Array.from({ length: Math.ceil(tasks.length / tasksPerPage) }, (_, i) => (
+                      <button key={i+1} className={`pagination-btn ${page === i+1 ? "active" : ""}`} onClick={() => setPage(i+1)}>
+                        {i+1}
+                      </button>
+                    ))}
+                    <button className="pagination-btn" onClick={() => setPage(p => Math.min(Math.ceil(tasks.length/tasksPerPage), p+1))} disabled={page === Math.ceil(tasks.length/tasksPerPage)}>Next →</button>
+                  </div>
+                )}
+              </>
             )}
           </>
         )}

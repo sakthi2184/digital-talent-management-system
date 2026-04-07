@@ -384,6 +384,32 @@ export default function Dashboard() {
               </div>
             )}
 
+            {/* Quick Actions */}
+            <div style={{ display: "flex", gap: "12px", marginBottom: "24px", flexWrap: "wrap" }}>
+              {isAdmin && (
+                <Link to="/tasks" style={{
+                  display: "flex", alignItems: "center", gap: "8px",
+                  padding: "10px 20px", borderRadius: "10px", textDecoration: "none",
+                  background: "var(--accent-bg)", border: "1px solid var(--accent)",
+                  color: "var(--accent)", fontSize: "13px", fontWeight: 600, transition: "all 0.2s"
+                }}>➕ New Task</Link>
+              )}
+              <Link to="/tasks" style={{
+                display: "flex", alignItems: "center", gap: "8px",
+                padding: "10px 20px", borderRadius: "10px", textDecoration: "none",
+                background: "var(--bg-card)", border: "1px solid var(--border)",
+                color: "var(--text-primary)", fontSize: "13px", fontWeight: 600, transition: "all 0.2s"
+              }}>📋 View All Tasks</Link>
+              {isAdmin && (
+                <Link to="/admin" style={{
+                  display: "flex", alignItems: "center", gap: "8px",
+                  padding: "10px 20px", borderRadius: "10px", textDecoration: "none",
+                  background: "var(--bg-card)", border: "1px solid var(--border)",
+                  color: "var(--text-primary)", fontSize: "13px", fontWeight: 600, transition: "all 0.2s"
+                }}>🛡️ Admin Panel</Link>
+              )}
+            </div>
+
             {/* Recent Tasks */}
             <div style={{ marginBottom: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--text-primary)" }}>Recent Tasks</div>

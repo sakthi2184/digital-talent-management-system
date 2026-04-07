@@ -133,6 +133,12 @@ export default function Login() {
           </button>
         </form>
 
+        <div style={{ textAlign: "right", marginTop: "4px", marginBottom: "4px" }}>
+          <Link to="/forgot-password" className="auth-link" style={{ fontSize: "13px" }}>
+            Forgot password?
+          </Link>
+        </div>
+
         <div className="divider" />
         <p style={{ textAlign: "center", fontSize: "14px", color: "var(--text-secondary)" }}>
           Don't have an account?{" "}
